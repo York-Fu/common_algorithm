@@ -10,15 +10,15 @@ ImuData::ImuData() : lpfGyroX(IMU_SAMPLE_FREQ, IMU_CUTOFF_FREQ),
                      lpfAccY(IMU_SAMPLE_FREQ, IMU_CUTOFF_FREQ),
                      lpfAccZ(IMU_SAMPLE_FREQ, IMU_CUTOFF_FREQ)
 {
-  dataOffset.angularVelocity.x = 0.0;
-  dataOffset.angularVelocity.y = 0.0;
-  dataOffset.angularVelocity.z = 0.0;
-  dataOffset.linearAcceleration.x = 0.0;
-  dataOffset.linearAcceleration.y = 0.0;
-  dataOffset.linearAcceleration.z = 0.0;
-  dataOffset.attitudeAngle.roll = 0.0;
-  dataOffset.attitudeAngle.pitch = 0.0;
-  dataOffset.attitudeAngle.yaw = 0.0;
+  dataOffset.angularVel.x = 0.0;
+  dataOffset.angularVel.y = 0.0;
+  dataOffset.angularVel.z = 0.0;
+  dataOffset.linearAcc.x = 0.0;
+  dataOffset.linearAcc.y = 0.0;
+  dataOffset.linearAcc.z = 0.0;
+  dataOffset.eulerAngle.roll = 0.0;
+  dataOffset.eulerAngle.pitch = 0.0;
+  dataOffset.eulerAngle.yaw = 0.0;
 
   _kp = 15.0f;                     // 比例增益支配率收敛到加速度计/磁强计
   _ki = 0.004f;                    // 积分增益支配率的陀螺仪偏见的衔接
@@ -33,31 +33,31 @@ ImuData::~ImuData()
 
 void ImuData::calibrateGyro(double_t gx, double_t gy, double_t gz)
 {
-  dataOffset.angularVelocity.x = gx;
-  dataOffset.angularVelocity.y = gy;
-  dataOffset.angularVelocity.z = gz;
+  dataOffset.angularVel.x = gx;
+  dataOffset.angularVel.y = gy;
+  dataOffset.angularVel.z = gz;
 }
 
 void ImuData::calibrateAcc(double_t ax, double_t ay, double_t az)
 {
-  dataOffset.linearAcceleration.x = ax;
-  dataOffset.linearAcceleration.y = ay;
-  dataOffset.linearAcceleration.z = az;
+  dataOffset.linearAcc.x = ax;
+  dataOffset.linearAcc.y = ay;
+  dataOffset.linearAcc.z = az;
 }
 
-void ImuData::calibrateAttitude(double_t r, double_t p, double_t y)
+void ImuData::calibrateEuler(double_t r, double_t p, double_t y)
 {
-  dataOffset.attitudeAngle.roll = r;
-  dataOffset.attitudeAngle.pitch = p;
-  dataOffset.attitudeAngle.yaw = y;
+  dataOffset.eulerAngle.roll = r;
+  dataOffset.eulerAngle.pitch = p;
+  dataOffset.eulerAngle.yaw = y;
 }
 
 void ImuData::setGyro(double_t gx, double_t gy, double_t gz)
 {
   mtxRW.lock();
-  imuData.angularVelocity.x = gx - dataOffset.angularVelocity.x;
-  imuData.angularVelocity.y = gy - dataOffset.angularVelocity.y;
-  imuData.angularVelocity.z = gz - dataOffset.angularVelocity.z;
+  imuData.angularVel.x = gx - dataOffset.angularVel.x;
+  imuData.angularVel.y = gy - dataOffset.angularVel.y;
+  imuData.angularVel.z = gz - dataOffset.angularVel.z;
   mtxRW.unlock();
 
 }
@@ -65,18 +65,18 @@ void ImuData::setGyro(double_t gx, double_t gy, double_t gz)
 void ImuData::setAcc(double_t ax, double_t ay, double_t az)
 {
   mtxRW.lock();
-  imuData.linearAcceleration.x = ax - dataOffset.linearAcceleration.x;
-  imuData.linearAcceleration.y = ay - dataOffset.linearAcceleration.y;
-  imuData.linearAcceleration.z = az - dataOffset.linearAcceleration.z;
+  imuData.linearAcc.x = ax - dataOffset.linearAcc.x;
+  imuData.linearAcc.y = ay - dataOffset.linearAcc.y;
+  imuData.linearAcc.z = az - dataOffset.linearAcc.z;
   mtxRW.unlock();
 }
 
-void ImuData::setAttitude(double_t roll, double_t pitch, double_t yaw)
+void ImuData::setEuler(double_t roll, double_t pitch, double_t yaw)
 {
   mtxRW.lock();
-  imuData.attitudeAngle.roll = roll;
-  imuData.attitudeAngle.pitch = pitch;
-  imuData.attitudeAngle.yaw = yaw;
+  imuData.eulerAngle.roll = roll;
+  imuData.eulerAngle.pitch = pitch;
+  imuData.eulerAngle.yaw = yaw;
   mtxRW.unlock();
 }
 
@@ -97,7 +97,7 @@ void ImuData::setAccLpf(double_t sampleFreq, double_t cutoffFreq)
 Axis_t ImuData::getGyro()
 {
   mtxRW.lock();
-  Axis_t data = imuData.angularVelocity;
+  Axis_t data = imuData.angularVel;
   mtxRW.unlock();
   return data;
 }
@@ -105,15 +105,15 @@ Axis_t ImuData::getGyro()
 Axis_t ImuData::getAcc()
 {
   mtxRW.lock();
-  Axis_t data = imuData.linearAcceleration;
+  Axis_t data = imuData.linearAcc;
   mtxRW.unlock();
   return data;
 }
 
-AttitudeAngle_t ImuData::getAttitude()
+EulerAngle_t ImuData::getEuler()
 {
   mtxRW.lock();
-  AttitudeAngle_t data = imuData.attitudeAngle;
+  EulerAngle_t data = imuData.eulerAngle;
   mtxRW.unlock();
   return data;
 }
@@ -177,9 +177,9 @@ void ImuData::fusion(float gx, float gy, float gz, float ax, float ay, float az)
   q3 = q3 / norm;
 
   // 转换为弧度
-  imuData.attitudeAngle.roll = atan2(2 * q2 * q3 + 2 * q0 * q1, -2 * q1 * q1 - 2 * q2 * q2 + 1);     // roll
-  imuData.attitudeAngle.pitch = asin(-2 * q1 * q3 + 2 * q0 * q2);                                    // pitch
-  imuData.attitudeAngle.yaw = atan2(2 * (q1 * q2 + q0 * q3), q0 * q0 + q1 * q1 - q2 * q2 - q3 * q3); // yaw
+  imuData.eulerAngle.roll = atan2(2 * q2 * q3 + 2 * q0 * q1, -2 * q1 * q1 - 2 * q2 * q2 + 1);     // roll
+  imuData.eulerAngle.pitch = asin(-2 * q1 * q3 + 2 * q0 * q2);                                    // pitch
+  imuData.eulerAngle.yaw = atan2(2 * (q1 * q2 + q0 * q3), q0 * q0 + q1 * q1 - q2 * q2 - q3 * q3); // yaw
 }
 
 void ImuData::datafusion()
@@ -189,12 +189,12 @@ void ImuData::datafusion()
   float mag[3] = {0.0f, 0.0f, 0.0f};
 
   mtxRW.lock();
-  gyro[0] = lpfGyroX.apply(imuData.angularVelocity.x);
-  gyro[1] = lpfGyroY.apply(imuData.angularVelocity.y);
-  gyro[2] = lpfGyroZ.apply(imuData.angularVelocity.z);
-  acc[0] = lpfAccX.apply(imuData.linearAcceleration.x);
-  acc[1] = lpfAccY.apply(imuData.linearAcceleration.y);
-  acc[2] = lpfAccZ.apply(imuData.linearAcceleration.z);
+  gyro[0] = lpfGyroX.apply(imuData.angularVel.x);
+  gyro[1] = lpfGyroY.apply(imuData.angularVel.y);
+  gyro[2] = lpfGyroZ.apply(imuData.angularVel.z);
+  acc[0] = lpfAccX.apply(imuData.linearAcc.x);
+  acc[1] = lpfAccY.apply(imuData.linearAcc.y);
+  acc[2] = lpfAccZ.apply(imuData.linearAcc.z);
   mag[0] = 0.0f;
   mag[1] = 0.0f;
   mag[2] = 0.0f;
@@ -203,15 +203,15 @@ void ImuData::datafusion()
   fusion(gyro[0], gyro[1], gyro[2], acc[0], acc[1], acc[2]);
 #if 0
   std::cout
-      << "gx:" << imuData.angularVelocity.x * (180.0 / M_PI)
-      << std::setw(10) << "gy:" << imuData.angularVelocity.y * (180.0 / M_PI)
-      << std::setw(10) << "gz:" << imuData.angularVelocity.z * (180.0 / M_PI)
-      << std::setw(10) << "ax:" << imuData.linearAcceleration.x
-      << std::setw(10) << "ay:" << imuData.linearAcceleration.y
-      << std::setw(10) << "az:" << imuData.linearAcceleration.z
-      << std::setw(10) << "R:" << imuData.attitudeAngle.roll * (180.0 / M_PI)
-      << std::setw(10) << "P:" << imuData.attitudeAngle.pitch * (180.0 / M_PI)
-      << std::setw(10) << "Y:" << imuData.attitudeAngle.yaw * (180.0 / M_PI)
+      << "gx:" << imuData.angularVel.x * (180.0 / M_PI)
+      << std::setw(10) << "gy:" << imuData.angularVel.y * (180.0 / M_PI)
+      << std::setw(10) << "gz:" << imuData.angularVel.z * (180.0 / M_PI)
+      << std::setw(10) << "ax:" << imuData.linearAcc.x
+      << std::setw(10) << "ay:" << imuData.linearAcc.y
+      << std::setw(10) << "az:" << imuData.linearAcc.z
+      << std::setw(10) << "R:" << imuData.eulerAngle.roll * (180.0 / M_PI)
+      << std::setw(10) << "P:" << imuData.eulerAngle.pitch * (180.0 / M_PI)
+      << std::setw(10) << "Y:" << imuData.eulerAngle.yaw * (180.0 / M_PI)
       << "\r";
 #endif
 }

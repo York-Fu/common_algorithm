@@ -5,7 +5,7 @@
 #include <math.h>
 #include <iomanip>
 #include <mutex>
-#include "robotDataStruct.h"
+#include "sensorDataStruct.h"
 #include "lpf.h"
 
 class ImuData
@@ -15,16 +15,16 @@ public:
   ~ImuData();
   void calibrateGyro(double_t gx, double_t gy, double_t gz);
   void calibrateAcc(double_t ax, double_t ay, double_t az);
-  void calibrateAttitude(double_t r, double_t p, double_t y);
+  void calibrateEuler(double_t r, double_t p, double_t y);
   void setGyro(double_t gx, double_t gy, double_t gz);
   void setAcc(double_t ax, double_t ay, double_t az);
   void setGyroLpf(double_t sampleFreq, double_t cutoffFreq);
   void setAccLpf(double_t sampleFreq, double_t cutoffFreq);
-  void setAttitude(double_t roll, double_t pitch, double_t yaw);
+  void setEuler(double_t roll, double_t pitch, double_t yaw);
   ImuParam_t getData(void);
   Axis_t getGyro(void);
   Axis_t getAcc(void);
-  AttitudeAngle_t getAttitude(void);
+  EulerAngle_t getEuler(void);
   void fusionCoefficient(float kp, float ki, float halfT);
   void datafusion(void);
 
