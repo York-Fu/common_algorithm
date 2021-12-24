@@ -1,11 +1,11 @@
-#include "filter_algorithm.h"
+#include "median_filter.h"
 
-double_t GetMedianNum(double_t *dataArray, int iFilterLen)
+double MedianFilter(double *pData, int iFilterLen)
 {
 	int i, j; // 循环变量
-	double_t bTemp;
-  double_t bArray[iFilterLen];
-  memcpy(bArray, dataArray, sizeof(double_t) * iFilterLen)
+	double bTemp;
+	double bArray[iFilterLen];
+	memcpy(bArray, pData, sizeof(double) * iFilterLen);
 	// 用冒泡法对数组进行排序
 	for (j = 0; j < iFilterLen - 1; j++)
 	{
@@ -29,15 +29,15 @@ double_t GetMedianNum(double_t *dataArray, int iFilterLen)
 	else
 	{
 		// 数组有偶数个元素，返回中间两个元素平均值
-		bTemp = (bArray[iFilterLen / 2] + bArray[iFilterLen / 2 + 1]) / 2;
+		bTemp = (bArray[iFilterLen / 2 - 1] + bArray[iFilterLen / 2]) / 2.0;
 	}
 	return bTemp;
 }
 
-double_t MedianFilter(double_t *pData, int nSize)
+double AverageMedianFilter(double *pData, int nSize)
 {
-	double_t max, min;
-	double_t sum;
+	double max, min;
+	double sum;
 	int i = 0;
 	if (nSize > 2)
 	{
@@ -59,7 +59,7 @@ double_t MedianFilter(double_t *pData, int nSize)
 		}
 
 		sum = sum - max - min;							//去掉最大的值和最小的值
-		return sum / (double_t)(nSize - 2); //对N-2个数求平均值
+		return sum / (double)(nSize - 2); //对N-2个数求平均值
 	}
 
 	return 0;
